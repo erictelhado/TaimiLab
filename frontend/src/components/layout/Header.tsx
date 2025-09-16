@@ -81,7 +81,7 @@ export function Header() {
                 isScrolled ? 'text-endereco-blue hover:text-endereco-light-blue' : 'text-gray-800 hover:text-endereco-blue'
               }`}
             >
-              endereco<span className="text-gray-400">.de</span>
+              Taimi<span className="text-blue-500">Lab</span>
             </button>
           </div>
 
@@ -98,14 +98,14 @@ export function Header() {
               Home
             </Link>
             <button
-              onClick={() => scrollToSection('benefits')}
+              onClick={() => scrollToSection('about')}
               className={`transition-all duration-200 ${
-                isSectionActive('benefits') 
+                isSectionActive('about') 
                   ? 'text-black font-bold' 
                   : 'text-gray-700 hover:text-endereco-blue'
               }`}
             >
-              Plugin
+              Sobre
             </button>
             <button
               onClick={() => scrollToSection('contact')}
@@ -115,20 +115,20 @@ export function Header() {
                   : 'text-gray-700 hover:text-endereco-blue'
               }`}
             >
-              Contact
+              Contato
             </button>
             
             {/* Dashboard Link for authenticated users */}
             {isAuthenticated && (
               <Link
-                to="/dashboard"
+                to="/home"
                 className={`transition-all duration-200 ${
-                  isRouteActive('/dashboard') 
+                  isRouteActive('/home') 
                     ? 'text-black font-bold' 
                     : 'text-gray-700 hover:text-endereco-blue'
                 }`}
               >
-                Dashboard
+                Home
               </Link>
             )}
           </nav>
@@ -208,14 +208,14 @@ export function Header() {
                 Home
               </Link>
               <button
-                onClick={() => scrollToSection('benefits')}
+                onClick={() => scrollToSection('about')}
                 className={`block w-full text-left px-3 py-2 transition-all duration-200 ${
-                  isSectionActive('benefits') 
+                  isSectionActive('about') 
                     ? 'text-black font-bold' 
                     : 'text-gray-700 hover:text-endereco-blue hover:bg-gray-50'
                 }`}
               >
-                Plugin
+                Sobre
               </button>
               <button
                 onClick={() => scrollToSection('contact')}
@@ -231,15 +231,15 @@ export function Header() {
               {/* Dashboard Link for authenticated users */}
               {isAuthenticated && (
                 <Link
-                  to="/dashboard"
-                  className={`block w-full text-left px-3 py-2 transition-all duration-200 ${
-                    isRouteActive('/dashboard') 
-                      ? 'text-black font-bold' 
-                      : 'text-gray-700 hover:text-endereco-blue hover:bg-gray-50'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Dashboard
+                to="/home"
+                className={`block w-full text-left px-3 py-2 transition-all duration-200 ${
+                  isRouteActive('/home') 
+                    ? 'text-black font-bold' 
+                    : 'text-gray-700 hover:text-endereco-blue hover:bg-gray-50'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
                 </Link>
               )}
               

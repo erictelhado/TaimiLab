@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { LanguageProvider } from './contexts/LanguageContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Login } from './components/auth/Login';
-import { Dashboard } from './components/auth/Dashboard';
+import { Home } from './components/pages/Home';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { ScrollToTop } from './components/layout/ScrollToTop';
-import { DemoSection } from './components/sections/DemoSection';
 
 interface ScrollPosition {
   y: number;
@@ -159,20 +157,16 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route 
-            path="/dashboard" 
+            path="/home" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Home />
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/" 
-            element={
-              <>
-                <DemoSection />
-              </>
-            } 
+            element={<Home />} 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -190,11 +184,9 @@ function AppContent() {
 export default function App(): React.JSX.Element {
   return (
     <Router>
-      <LanguageProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }
