@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Circle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
+import { AuthService } from '../../services/auth.service';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<'active' | 'expiring' | 'expired'>('active');
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
 
@@ -33,6 +35,24 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Monitor session status
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSessionStatus('expired');
+      return;
+    }
+
+    const checkSessionStatus = () => {
+      const sessionInfo = AuthService.getSessionInfo();
+      setSessionStatus(sessionInfo.sessionStatus);
+    };
+
+    checkSessionStatus();
+    const interval = setInterval(checkSessionStatus, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -121,14 +141,14 @@ export function Header() {
             {/* Dashboard Link for authenticated users */}
             {isAuthenticated && (
               <Link
-                to="/home"
+                to="/dashboard"
                 className={`transition-all duration-200 ${
-                  isRouteActive('/home') 
+                  isRouteActive('/dashboard') 
                     ? 'text-black font-bold' 
                     : 'text-gray-700 hover:text-endereco-blue'
                 }`}
               >
-                Home
+                Dashboard
               </Link>
             )}
           </nav>
@@ -156,6 +176,21 @@ export function Header() {
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
                       <p className="text-sm text-gray-500">{user?.email}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Circle 
+                          size={8} 
+                          className={`${
+                            sessionStatus === 'active' ? 'text-green-500' :
+                            sessionStatus === 'expiring' ? 'text-yellow-500' :
+                            'text-red-500'
+                          }`}
+                        />
+                        <span className="text-xs text-gray-500">
+                          {sessionStatus === 'active' ? 'Sessão ativa' :
+                           sessionStatus === 'expiring' ? 'Sessão expirando' :
+                           'Sessão expirada'}
+                        </span>
+                      </div>
                     </div>
                     <button
                       onClick={handleLogout}
@@ -231,15 +266,15 @@ export function Header() {
               {/* Dashboard Link for authenticated users */}
               {isAuthenticated && (
                 <Link
-                to="/home"
+                to="/dashboard"
                 className={`block w-full text-left px-3 py-2 transition-all duration-200 ${
-                  isRouteActive('/home') 
+                  isRouteActive('/dashboard') 
                     ? 'text-black font-bold' 
                     : 'text-gray-700 hover:text-endereco-blue hover:bg-gray-50'
                 }`}
                 onClick={() => setIsMenuOpen(false)}
               >
-                Home
+                Dashboard
                 </Link>
               )}
               
@@ -249,6 +284,21 @@ export function Header() {
                   <div className="px-3 py-2">
                     <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
                     <p className="text-sm text-gray-500">{user?.email}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Circle 
+                        size={8} 
+                        className={`${
+                          sessionStatus === 'active' ? 'text-green-500' :
+                          sessionStatus === 'expiring' ? 'text-yellow-500' :
+                          'text-red-500'
+                        }`}
+                      />
+                      <span className="text-xs text-gray-500">
+                        {sessionStatus === 'active' ? 'Sessão ativa' :
+                         sessionStatus === 'expiring' ? 'Sessão expirando' :
+                         'Sessão expirada'}
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}

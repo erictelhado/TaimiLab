@@ -1,18 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Globe } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { Alert, AlertDescription } from '../ui/Alert';
-import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { AuthUtils } from '../../utils/auth';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
+import { Alert, AlertDescription } from '../components/ui/Alert';
+import { AuthService } from '../services/auth.service';
+import { AuthUtils } from '../utils/auth';
 
-export function Login() {
-  const { login } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+export function LoginView() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('demo@endereco.de');
   const [password, setPassword] = useState('Endereco123');
@@ -37,7 +34,7 @@ export function Login() {
   const debouncedEmailValidation = useCallback(
     debounce((value: string) => {
       if (value && !AuthUtils.validateEmail(value)) {
-        setEmailError('Please enter a valid email address');
+        setEmailError('Por favor, insira um endereço de email válido');
       } else {
         setEmailError('');
       }
@@ -87,15 +84,15 @@ export function Login() {
     let hasErrors = false;
     
     if (!email) {
-      setEmailError('Email is required');
+      setEmailError('Email é obrigatório');
       hasErrors = true;
     } else if (!AuthUtils.validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError('Por favor, insira um endereço de email válido');
       hasErrors = true;
     }
 
     if (!password) {
-      setPasswordError('Password is required');
+      setPasswordError('Senha é obrigatória');
       hasErrors = true;
     } else {
       const passwordValidation = AuthUtils.validatePassword(password);
@@ -112,10 +109,21 @@ export function Login() {
     setIsLoading(true);
     
     try {
-      await login({ email, password, rememberMe });
+      await AuthService.login({ email, password, rememberMe });
+      
+      // Show success notification
+      if ((window as any).addNotification) {
+        (window as any).addNotification({
+          type: 'success',
+          title: 'Login realizado com sucesso!',
+          message: `Bem-vindo!`,
+          duration: 3000
+        });
+      }
+      
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.loginError'));
+      setError(err instanceof Error ? err.message : 'Erro ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -125,57 +133,24 @@ export function Login() {
     setShowPassword(!showPassword);
   };
 
-  const handleLanguageChange = (newLanguage: 'en' | 'de') => () => {
-    setLanguage(newLanguage);
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
-      {/* Language switcher */}
-      <div className="absolute top-4 right-4">
-        <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2">
-          <Globe className="w-4 h-4 text-white" />
-          <button
-            onClick={handleLanguageChange('en')}
-            className={`px-3 py-1 rounded text-sm transition-all duration-200 ${
-              language === 'en' 
-                ? 'bg-white text-blue-600 font-medium shadow-sm' 
-                : 'text-white hover:bg-white/10'
-            }`}
-            type="button"
-          >
-            EN
-          </button>
-          <button
-            onClick={handleLanguageChange('de')}
-            className={`px-3 py-1 rounded text-sm transition-all duration-200 ${
-              language === 'de' 
-                ? 'bg-white text-blue-600 font-medium shadow-sm' 
-                : 'text-white hover:bg-white/10'
-            }`}
-            type="button"
-          >
-            DE
-          </button>
-        </div>
-      </div>
-
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center space-y-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-2 border-gray-200 bg-white">
+        <CardHeader className="text-center space-y-4 bg-gray-50 rounded-t-lg">
           <div className="flex items-center justify-center mb-4">
-            <div className="text-2xl font-medium text-primary">endereco</div>
-            <span className="text-muted-foreground ml-1">.de</span>
+            <div className="text-3xl font-bold text-gray-800">TaimiLab</div>
           </div>
-          <CardTitle className="text-foreground">{t('auth.login')}</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {t('auth.demoCredentials')}
+          <CardTitle className="text-2xl text-gray-800">Entrar</CardTitle>
+          <CardDescription className="text-gray-600">
+            Acesse sua conta para continuar
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">
-                {t('auth.email')}
+              <Label htmlFor="email" className="text-gray-700 font-medium">
+                Email
               </Label>
               <Input
                 id="email"
@@ -183,7 +158,7 @@ export function Login() {
                 value={email}
                 onChange={handleEmailChange}
                 placeholder="demo@endereco.de"
-                className="bg-input-background"
+                className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 required
                 autoComplete="email"
                 disabled={isLoading}
@@ -196,8 +171,8 @@ export function Login() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">
-                {t('auth.password')}
+              <Label htmlFor="password" className="text-gray-700 font-medium">
+                Senha
               </Label>
               <div className="relative">
                 <Input
@@ -206,7 +181,7 @@ export function Login() {
                   value={password}
                   onChange={handlePasswordChange}
                   placeholder="Endereco123"
-                  className="bg-input-background pr-10"
+                  className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
@@ -256,16 +231,16 @@ export function Login() {
 
             <Button 
               type="submit" 
-              className="w-full bg-black text-primary-foreground hover:bg-primary/90 transition-colors" 
+              className="w-full bg-blue-600 text-white hover:bg-blue-700 transition-colors py-3 text-lg font-medium" 
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('general.loading')}
+                  Entrando...
                 </>
               ) : (
-                t('auth.loginButton')
+                'Entrar'
               )}
             </Button>
           </form>
@@ -285,4 +260,4 @@ function debounce<T extends (value: string) => void>(
     clearTimeout(timeout);
     timeout = setTimeout(() => func(value), wait);
   }) as T;
-} 
+}

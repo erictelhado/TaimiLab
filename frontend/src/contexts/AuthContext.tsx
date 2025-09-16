@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { AuthContextType, AuthState, LoginCredentials, User } from '../types/auth';
+import type { AuthContextType, AuthState, LoginCredentials } from '../types/auth';
+import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 import { AuthUtils } from '../utils/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,52 +21,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Check authentication status on mount and token change
   const checkAuth = useCallback(async () => {
     try {
-      const token = AuthUtils.getToken();
-      
-      if (!token) {
-        setAuthState({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        return;
-      }
-
-      if (!AuthUtils.isTokenValid(token)) {
-        // Token expired, clear auth
-        AuthUtils.clearAuth();
-        setAuthState({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        return;
-      }
-
-      // Token is valid, get user from storage
-      const user = AuthUtils.getUser();
-      if (user) {
-        setAuthState({
-          user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        // User not found in storage, clear auth
-        AuthUtils.clearAuth();
-        setAuthState({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
+      const { user, token, isAuthenticated } = await AuthService.checkAuth();
+      setAuthState({
+        user,
+        token,
+        isAuthenticated,
+        isLoading: false,
+      });
     } catch (error) {
       console.error('Auth check failed:', error);
-      AuthUtils.clearAuth();
       setAuthState({
         user: null,
         token: null,
@@ -76,53 +41,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Login function with rate limiting and validation
   const login = useCallback(async (credentials: LoginCredentials): Promise<void> => {
-    // Check rate limiting
-    if (!AuthUtils.checkRateLimit()) {
-      throw new Error('Too many login attempts. Please try again later.');
-    }
-
-    // Validate credentials
-    if (!AuthUtils.validateEmail(credentials.email)) {
-      throw new Error('Please enter a valid email address.');
-    }
-
-    const passwordValidation = AuthUtils.validatePassword(credentials.password);
-    if (!passwordValidation.isValid) {
-      throw new Error(passwordValidation.errors[0]);
-    }
-
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user, token } = await AuthService.login(credentials);
+      
+      setAuthState({
+        user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
 
-      // Mock authentication - in real app, this would be an API call
-      if (credentials.email === 'demo@endereco.de' && credentials.password === 'Endereco123') {
-        const user: User = {
-          id: '1',
-          email: credentials.email,
-          name: 'Demo User',
-        };
-
-        const token = AuthUtils.createToken(user);
-        
-        // Store auth data
-        AuthUtils.setToken(token);
-        AuthUtils.setUser(user);
-        
-        // Reset login attempts on successful login
-        AuthUtils.resetLoginAttempts();
-        
-        setAuthState({
-          user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        // Record failed attempt
-        AuthUtils.recordLoginAttempt();
-        throw new Error('Invalid email or password.');
-      }
+      // Show success notification
+      NotificationService.success(
+        'Login realizado com sucesso!',
+        `Bem-vindo, ${user.name || user.email}!`,
+        3000
+      );
     } catch (error) {
       throw error;
     }
@@ -130,26 +64,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Logout function
   const logout = useCallback(() => {
-    AuthUtils.clearAuth();
+    AuthService.logout();
     setAuthState({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: false,
     });
+
+    // Show logout notification
+    NotificationService.info(
+      'Logout realizado',
+      'Você foi desconectado com sucesso.',
+      2000
+    );
   }, []);
 
-  // Set up idle timer when authenticated
+  // Set up idle timer and token refresh when authenticated
   useEffect(() => {
-    if (authState.isAuthenticated) {
+    if (authState.isAuthenticated && authState.token) {
+      // Set up idle timer
       const cleanup = AuthUtils.startIdleTimer(() => {
         console.log('Session expired due to inactivity');
+        
+        // Show session expired notification
+        NotificationService.warning(
+          'Sessão expirada',
+          'Sua sessão expirou devido à inatividade.',
+          5000
+        );
+        
         logout();
       });
 
-      return cleanup;
+      // Set up token refresh interval
+      const refreshInterval = setInterval(() => {
+        if (authState.token && AuthService.shouldRefreshToken(authState.token)) {
+          const newToken = AuthService.refreshToken();
+          if (newToken) {
+            setAuthState(prev => ({
+              ...prev,
+              token: newToken
+            }));
+            console.log('Token refreshed automatically');
+            
+            // Show refresh notification
+            NotificationService.info(
+              'Sessão renovada',
+              'Sua sessão foi renovada automaticamente.',
+              2000
+            );
+          }
+        }
+      }, 5 * 60 * 1000); // Check every 5 minutes
+
+      return () => {
+        cleanup();
+        clearInterval(refreshInterval);
+      };
     }
-  }, [authState.isAuthenticated, logout]);
+  }, [authState.isAuthenticated, authState.token, logout]);
 
   // Check auth on mount
   useEffect(() => {

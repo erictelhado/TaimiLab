@@ -4,6 +4,9 @@ import type { User } from '../types/auth';
 // Storage keys
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
+const REMEMBER_ME_KEY = 'auth_remember_me';
+const SESSION_TOKEN_KEY = 'session_auth_token';
+const SESSION_USER_KEY = 'session_auth_user';
 
 // Idle timeout in milliseconds (30 minutes)
 const IDLE_TIMEOUT = 30 * 60 * 1000;
@@ -45,24 +48,45 @@ export class AuthUtils {
   }
 
   // Storage management
-  static setToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+  static setToken(token: string, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(REMEMBER_ME_KEY, 'true');
+    } else {
+      sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+      localStorage.setItem(REMEMBER_ME_KEY, 'false');
+    }
   }
 
   static getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+    
+    if (rememberMe) {
+      return localStorage.getItem(TOKEN_KEY);
+    } else {
+      return sessionStorage.getItem(SESSION_TOKEN_KEY);
+    }
   }
 
   static removeToken(): void {
     localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
   }
 
-  static setUser(user: User): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  static setUser(user: User, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+    }
   }
 
   static getUser(): User | null {
-    const userStr = localStorage.getItem(USER_KEY);
+    const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+    const userStr = rememberMe 
+      ? localStorage.getItem(USER_KEY)
+      : sessionStorage.getItem(SESSION_USER_KEY);
+    
     if (!userStr) return null;
     
     try {
@@ -74,11 +98,49 @@ export class AuthUtils {
 
   static removeUser(): void {
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(SESSION_USER_KEY);
   }
 
   static clearAuth(): void {
     this.removeToken();
     this.removeUser();
+    localStorage.removeItem(REMEMBER_ME_KEY);
+  }
+
+  static isRememberMeEnabled(): boolean {
+    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  }
+
+  // Token refresh functionality
+  static refreshToken(): string | null {
+    const currentToken = this.getToken();
+    if (!currentToken) return null;
+
+    const decoded = this.decodeToken(currentToken);
+    if (!decoded) return null;
+
+    const user = decoded.user;
+    if (!user) return null;
+
+    // Create new token with extended expiration
+    const newToken = this.createToken(user);
+    const rememberMe = this.isRememberMeEnabled();
+    
+    // Update stored token
+    this.setToken(newToken, rememberMe);
+    
+    return newToken;
+  }
+
+  static shouldRefreshToken(token: string): boolean {
+    const decoded = this.decodeToken(token);
+    if (!decoded) return false;
+
+    const now = Math.floor(Date.now() / 1000);
+    const timeUntilExpiry = decoded.exp - now;
+    
+    // Refresh if token expires in less than 1 hour
+    return timeUntilExpiry < 3600;
   }
 
   // Session management

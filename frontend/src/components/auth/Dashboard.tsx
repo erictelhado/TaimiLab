@@ -1,7 +1,47 @@
 import { useAuth } from '../../contexts/AuthContext';
+import { AuthUtils } from '../../utils/auth';
+import { useState, useEffect } from 'react';
+import { Circle, Clock, Shield, User } from 'lucide-react';
 
 export function Dashboard() {
   const { user, logout } = useAuth();
+  const [sessionInfo, setSessionInfo] = useState({
+    isRememberMe: false,
+    tokenExpiry: null as Date | null,
+    sessionStatus: 'active' as 'active' | 'expiring' | 'expired'
+  });
+
+  useEffect(() => {
+    const updateSessionInfo = () => {
+      const token = AuthUtils.getToken();
+      const isRememberMe = AuthUtils.isRememberMeEnabled();
+      
+      if (token) {
+        const decoded = AuthUtils.decodeToken(token);
+        if (decoded) {
+          const expiryDate = new Date(decoded.exp * 1000);
+          const shouldRefresh = AuthUtils.shouldRefreshToken(token);
+          
+          setSessionInfo({
+            isRememberMe,
+            tokenExpiry: expiryDate,
+            sessionStatus: shouldRefresh ? 'expiring' : 'active'
+          });
+        }
+      } else {
+        setSessionInfo({
+          isRememberMe: false,
+          tokenExpiry: null,
+          sessionStatus: 'expired'
+        });
+      }
+    };
+
+    updateSessionInfo();
+    const interval = setInterval(updateSessionInfo, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -29,28 +69,91 @@ export function Dashboard() {
               </button>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">User Information</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* User Information Card */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <User className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-lg font-medium text-gray-900">Informações do Usuário</h2>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">ID do Usuário</dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-mono">{user?.id}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Email</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Nome</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{user?.name || 'Não informado'}</dd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Information Card */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Shield className="w-5 h-5 text-green-600" />
+                  <h2 className="text-lg font-medium text-gray-900">Informações da Sessão</h2>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Status da Sessão</dt>
+                    <dd className="mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        sessionInfo.sessionStatus === 'active' ? 'bg-green-100 text-green-800' :
+                        sessionInfo.sessionStatus === 'expiring' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        <Circle size={8} className="mr-1" />
+                        {sessionInfo.sessionStatus === 'active' ? 'Sessão Ativa' :
+                         sessionInfo.sessionStatus === 'expiring' ? 'Sessão Expirando' :
+                         'Sessão Expirada'}
+                      </span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Lembrar de Mim</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {sessionInfo.isRememberMe ? 'Ativado' : 'Desativado'}
+                    </dd>
+                  </div>
+                  {sessionInfo.tokenExpiry && (
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Token Expira em</dt>
+                      <dd className="mt-1 text-sm text-gray-900 flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        {sessionInfo.tokenExpiry.toLocaleString('pt-BR')}
+                      </dd>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Security Information */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium text-blue-900 mb-3">Informações de Segurança</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">User ID</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{user?.id}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Name</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{user?.name || 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Authentication Status</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Authenticated
-                    </span>
+                  <dt className="text-sm font-medium text-blue-700">Tipo de Armazenamento</dt>
+                  <dd className="mt-1 text-sm text-blue-600">
+                    {sessionInfo.isRememberMe ? 'LocalStorage (Persistente)' : 'SessionStorage (Temporário)'}
                   </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-blue-700">Refresh Automático</dt>
+                  <dd className="mt-1 text-sm text-blue-600">Ativado (a cada 5 minutos)</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-blue-700">Timeout de Inatividade</dt>
+                  <dd className="mt-1 text-sm text-blue-600">30 minutos</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-blue-700">Rate Limiting</dt>
+                  <dd className="mt-1 text-sm text-blue-600">5 tentativas por 15 minutos</dd>
                 </div>
               </div>
             </div>

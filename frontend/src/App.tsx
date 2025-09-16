@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Login } from './components/auth/Login';
-import { Home } from './components/pages/Home';
+import { LoginView, DashboardView, HomeView, ProfileView } from './views';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { ScrollToTop } from './components/layout/ScrollToTop';
+import { NotificationContainer } from './components/ui/Notification';
 
 interface ScrollPosition {
   y: number;
@@ -155,18 +155,26 @@ function AppContent() {
 
       <main id="main-content" tabIndex={-1}>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginView />} />
           <Route 
-            path="/home" 
+            path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Home />
+                <DashboardView />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfileView />
               </ProtectedRoute>
             } 
           />
           <Route 
             path="/" 
-            element={<Home />} 
+            element={<HomeView />} 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -177,6 +185,7 @@ function AppContent() {
         onClick={scrollToTop}
       />
       <Footer />
+      <NotificationContainer />
     </div>
   );
 }
