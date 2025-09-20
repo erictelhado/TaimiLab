@@ -121,7 +121,7 @@ export function LoginView() {
         });
       }
       
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login. Tente novamente.');
     } finally {
@@ -255,7 +255,7 @@ function debounce<T extends (value: string) => void>(
   func: T,
   wait: number
 ): T {
-  let timeout: number;
+  let timeout: NodeJS.Timeout;
   return ((value: string) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(value), wait);

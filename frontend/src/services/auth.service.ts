@@ -2,6 +2,8 @@
 import type { User, LoginCredentials } from '../types/auth';
 import { AuthUtils } from '../utils/auth';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://100.113.79.96:8000';
+
 export class AuthService {
   // Login method
   static async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
@@ -21,33 +23,45 @@ export class AuthService {
     }
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock authentication - in real app, this would be an API call
-      if (credentials.email === 'demo@endereco.de' && credentials.password === 'Endereco123') {
-        const user: User = {
-          id: '1',
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: credentials.email,
-          name: 'Demo User',
-        };
+          password: credentials.password,
+          remember_me: credentials.rememberMe || false
+        }),
+      });
 
-        const token = AuthUtils.createToken(user);
-        
-        // Store auth data
-        AuthUtils.setToken(token, credentials.rememberMe || false);
-        AuthUtils.setUser(user, credentials.rememberMe || false);
-        
-        // Reset login attempts on successful login
-        AuthUtils.resetLoginAttempts();
-        
-        return { user, token };
-      } else {
-        // Record failed attempt
-        AuthUtils.recordLoginAttempt();
-        throw new Error('Email ou senha inválidos.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erro ao fazer login');
       }
+
+      const data = await response.json();
+      
+      // Transform API response to our User type
+      const user: User = {
+        id: data.user.id.toString(),
+        email: data.user.email,
+        name: data.user.full_name || data.user.username,
+      };
+
+      const token = data.access_token;
+      
+      // Store auth data
+      AuthUtils.setToken(token, credentials.rememberMe || false);
+      AuthUtils.setUser(user, credentials.rememberMe || false);
+      
+      // Reset login attempts on successful login
+      AuthUtils.resetLoginAttempts();
+      
+      return { user, token };
     } catch (error) {
+      // Record failed attempt
+      AuthUtils.recordLoginAttempt();
       throw error;
     }
   }
@@ -80,22 +94,61 @@ export class AuthService {
         };
       }
 
-      // Token is valid, get user from storage
-      const user = AuthUtils.getUser();
-      if (user) {
+      // Verify token with API
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          // Token invalid, clear auth
+          AuthUtils.clearAuth();
+          return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+          };
+        }
+
+        const userData = await response.json();
+        
+        // Transform API response to our User type
+        const user: User = {
+          id: userData.id.toString(),
+          email: userData.email,
+          name: userData.full_name || userData.username,
+        };
+
+        // Update stored user data
+        AuthUtils.setUser(user, AuthUtils.isRememberMeEnabled());
+
         return {
           user,
           token,
           isAuthenticated: true,
         };
-      } else {
-        // User not found in storage, clear auth
-        AuthUtils.clearAuth();
-        return {
-          user: null,
-          token: null,
-          isAuthenticated: false,
-        };
+      } catch (apiError) {
+        console.error('API auth check failed:', apiError);
+        // Fallback to local storage
+        const user = AuthUtils.getUser();
+        if (user) {
+          return {
+            user,
+            token,
+            isAuthenticated: true,
+          };
+        } else {
+          AuthUtils.clearAuth();
+          return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+          };
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
