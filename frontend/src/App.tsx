@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { LoginView, DashboardView, HomeView } from './views';
+import { LoginView, DashboardView, HomeView, ProfileView } from './views';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 
@@ -14,19 +14,24 @@ function AppContent() {
       <main id="main-content" tabIndex={-1}>
         <Routes>
           <Route path="/login" element={<LoginView />} />
+          <Route path="/dashboard" element={<DashboardView />} />
           <Route 
-            path="/dashboard" 
+            path="/" 
             element={
               <ProtectedRoute>
-                <DashboardView />
+                <HomeView />
               </ProtectedRoute>
             } 
           />
           <Route 
-            path="/" 
-            element={<HomeView />} 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfileView />
+              </ProtectedRoute>
+            } 
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
 

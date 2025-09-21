@@ -111,7 +111,7 @@ export function LoginView() {
     
     try {
       await login({ email, password, rememberMe });
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login. Tente novamente.');
     } finally {

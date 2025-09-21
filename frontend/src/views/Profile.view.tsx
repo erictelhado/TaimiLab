@@ -69,12 +69,12 @@ export function ProfileView() {
         {/* Header */}
         <div className="mb-8">
           <Button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             variant="outline"
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Dashboard
+            Voltar ao Início
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Perfil do Usuário</h1>
           <p className="text-gray-600 mt-2">Gerencie suas informações pessoais e configurações de conta.</p>
