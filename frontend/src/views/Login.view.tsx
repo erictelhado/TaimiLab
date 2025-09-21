@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Alert, AlertDescription } from '../components/ui/Alert';
-import { AuthService } from '../services/auth.service';
+import { useAuth } from '../contexts/AuthContext';
 import { AuthUtils } from '../utils/auth';
 
 export function LoginView() {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('demo@endereco.de');
   const [password, setPassword] = useState('Endereco123');
@@ -109,19 +110,8 @@ export function LoginView() {
     setIsLoading(true);
     
     try {
-      await AuthService.login({ email, password, rememberMe });
-      
-      // Show success notification
-      if ((window as any).addNotification) {
-        (window as any).addNotification({
-          type: 'success',
-          title: 'Login realizado com sucesso!',
-          message: `Bem-vindo!`,
-          duration: 3000
-        });
-      }
-      
-      navigate('/');
+      await login({ email, password, rememberMe });
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login. Tente novamente.');
     } finally {
