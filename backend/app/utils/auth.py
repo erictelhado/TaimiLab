@@ -1,20 +1,25 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import HTTPException, status
 from app.config import settings
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        # Truncate password to 72 bytes to avoid bcrypt limitation
+        truncated_password = plain_password[:72].encode('utf-8')
+        return bcrypt.checkpw(truncated_password, hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return pwd_context.hash(password)
+    # Truncate password to 72 bytes to avoid bcrypt limitation
+    truncated_password = password[:72].encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(truncated_password, salt).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
@@ -43,9 +48,12 @@ def authenticate_user(db, email: str, password: str):
     """Authenticate a user with email and password."""
     from models.user import User
     
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            return False
+        if not verify_password(password, user.hashed_password):
+            return False
+        return user
+    except Exception:
         return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user

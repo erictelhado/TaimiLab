@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
     
+    # Guild Wars 2 API
+    gw2_api_base_url: str = "https://api.guildwars2.com/v2"
+    gw2_api_timeout: int = 30
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

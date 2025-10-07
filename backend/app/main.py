@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from database.connection import engine, Base
-from routers import auth, users, health
+from routers import auth, users, health, gw2
 
 # Create database tables
 @asynccontextmanager
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(gw2.router)
 
 # Root endpoint
 @app.get("/")
