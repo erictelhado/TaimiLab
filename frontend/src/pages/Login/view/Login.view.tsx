@@ -1,19 +1,21 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { Label } from '../components/ui/Label';
-import { Alert, AlertDescription } from '../components/ui/Alert';
-import { useAuth } from '../contexts/AuthContext';
-import { AuthUtils } from '../utils/auth';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { Input } from '../../../components/ui/Input';
+import { Label } from '../../../components/ui/Label';
+import { Alert, AlertDescription } from '../../../components/ui/Alert';
+import { useAuth } from '../../../contexts/AuthContext';
+import { AuthUtils } from '../../../utils/auth';
+import { LoginService } from '../services/login.service';
+import { LoginConstants } from '../constants/login.constants';
 
 export function LoginView() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('demo@endereco.de');
-  const [password, setPassword] = useState('Endereco123');
+  const [email, setEmail] = useState(LoginConstants.DEFAULT_EMAIL);
+  const [password, setPassword] = useState(LoginConstants.DEFAULT_PASSWORD);
   const [rememberMe, setRememberMe] = useState(AuthUtils.isRememberMeEnabled());
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,29 +83,11 @@ export function LoginView() {
     setEmailError('');
     setPasswordError('');
 
-    // Validate fields
-    let hasErrors = false;
-    
-    if (!email) {
-      setEmailError('Email é obrigatório');
-      hasErrors = true;
-    } else if (!AuthUtils.validateEmail(email)) {
-      setEmailError('Por favor, insira um endereço de email válido');
-      hasErrors = true;
-    }
-
-    if (!password) {
-      setPasswordError('Senha é obrigatória');
-      hasErrors = true;
-    } else {
-      const passwordValidation = AuthUtils.validatePassword(password);
-      if (!passwordValidation.isValid) {
-        setPasswordError(passwordValidation.errors[0]);
-        hasErrors = true;
-      }
-    }
-
-    if (hasErrors) {
+    // Validate fields using LoginService
+    const validation = LoginService.validateCredentials({ email, password });
+    if (!validation.isValid) {
+      if (validation.errors.email) setEmailError(validation.errors.email);
+      if (validation.errors.password) setPasswordError(validation.errors.password);
       return;
     }
 
@@ -123,17 +107,16 @@ export function LoginView() {
     setShowPassword(!showPassword);
   };
 
-
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-2xl border-2 border-gray-200 bg-white">
         <CardHeader className="text-center space-y-4 bg-gray-50 rounded-t-lg">
           <div className="flex items-center justify-center mb-4">
-            <div className="text-3xl font-bold text-gray-800">TaimiLab</div>
+            <div className="text-3xl font-bold text-gray-800">{LoginConstants.APP_NAME}</div>
           </div>
-          <CardTitle className="text-2xl text-gray-800">Entrar</CardTitle>
+          <CardTitle className="text-2xl text-gray-800">{LoginConstants.PAGE_TITLE}</CardTitle>
           <CardDescription className="text-gray-600">
-            Acesse sua conta para continuar
+            {LoginConstants.PAGE_DESCRIPTION}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,7 +130,7 @@ export function LoginView() {
                 type="email"
                 value={email}
                 onChange={handleEmailChange}
-                placeholder="demo@endereco.de"
+                placeholder={LoginConstants.EMAIL_PLACEHOLDER}
                 className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 required
                 autoComplete="email"
@@ -170,7 +153,7 @@ export function LoginView() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={handlePasswordChange}
-                  placeholder="Endereco123"
+                  placeholder={LoginConstants.PASSWORD_PLACEHOLDER}
                   className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
                   required
                   autoComplete="current-password"
@@ -245,9 +228,11 @@ function debounce<T extends (value: string) => void>(
   func: T,
   wait: number
 ): T {
-  let timeout: NodeJS.Timeout;
+  let timeout: number;
   return ((value: string) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(value), wait);
   }) as T;
 }
+
+

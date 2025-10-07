@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { GW2Provider } from './contexts/GW2Context';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { LoginView, DashboardView, HomeView, ProfileView } from './views';
+import { LoginView, DashboardView, HomeView, ProfileView } from './pages';
+import { GW2Dashboard } from './pages/GW2/GW2Dashboard';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 
@@ -15,6 +17,14 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginView />} />
           <Route path="/dashboard" element={<DashboardView />} />
+          <Route 
+            path="/gw2" 
+            element={
+              <ProtectedRoute>
+                <GW2Dashboard />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/" 
             element={
@@ -44,7 +54,9 @@ export default function App(): React.JSX.Element {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <GW2Provider>
+          <AppContent />
+        </GW2Provider>
       </AuthProvider>
     </Router>
   );

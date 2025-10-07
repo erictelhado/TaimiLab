@@ -1,8 +1,7 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { useAuth } from '../../../contexts/AuthContext';
 import { User, BarChart3, LogOut, ArrowRight } from 'lucide-react';
 
 export function HomeView() {
@@ -144,3 +143,6 @@ export function HomeView() {
     </div>
   );
 }
+
+
+

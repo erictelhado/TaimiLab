@@ -48,6 +48,12 @@ export function Header() {
                   Home
                 </Link>
                 <Link
+                  to="/gw2"
+                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Guild Wars 2
+                </Link>
+                <Link
                   to="/profile"
                   className="text-gray-700 hover:text-blue-600 transition-colors"
                 >
@@ -131,6 +137,13 @@ export function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Home
+                  </Link>
+                  <Link
+                    to="/gw2"
+                    className="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Guild Wars 2
                   </Link>
                   <Link
                     to="/profile"

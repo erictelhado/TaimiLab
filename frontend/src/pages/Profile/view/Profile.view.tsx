@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Calendar, Shield, Save, ArrowLeft } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { Label } from '../components/ui/Label';
-import { useAuth } from '../contexts/AuthContext';
-import { AuthService } from '../services/auth.service';
-import { NotificationService } from '../services/notification.service';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { Input } from '../../../components/ui/Input';
+import { Label } from '../../../components/ui/Label';
+import { useAuth } from '../../../contexts/AuthContext';
+import { ProfileService } from '../services/profile.service';
+import { ProfileConstants } from '../constants/profile.constants';
+import type { ProfileFormData } from '../types/profile.types';
 
 export function ProfileView() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: user?.name || '',
     email: user?.email || '',
   });
@@ -38,27 +39,16 @@ export function ProfileView() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      NotificationService.success(
-        'Perfil atualizado',
-        'Suas informações foram salvas com sucesso.',
-        3000
-      );
+      await ProfileService.updateProfile(formData);
     } catch (error) {
-      NotificationService.error(
-        'Erro ao salvar',
-        'Não foi possível salvar suas informações.',
-        5000
-      );
+      console.error('Error updating profile:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
-    AuthService.logout();
+    ProfileService.logout();
     logout();
     navigate('/login');
   };
@@ -74,10 +64,10 @@ export function ProfileView() {
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Início
+            {ProfileConstants.BACK_BUTTON_TEXT}
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Perfil do Usuário</h1>
-          <p className="text-gray-600 mt-2">Gerencie suas informações pessoais e configurações de conta.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{ProfileConstants.PAGE_TITLE}</h1>
+          <p className="text-gray-600 mt-2">{ProfileConstants.PAGE_DESCRIPTION}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -87,30 +77,30 @@ export function ProfileView() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <User className="w-5 h-5 text-blue-600" />
-                  <span>Informações Pessoais</span>
+                  <span>{ProfileConstants.PERSONAL_INFO_TITLE}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Nome</Label>
+                    <Label htmlFor="name">{ProfileConstants.NAME_LABEL}</Label>
                     <Input
                       id="name"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="Seu nome completo"
+                      placeholder={ProfileConstants.NAME_PLACEHOLDER}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{ProfileConstants.EMAIL_LABEL}</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="seu@email.com"
+                      placeholder={ProfileConstants.EMAIL_PLACEHOLDER}
                       disabled
                     />
                   </div>
@@ -123,7 +113,7 @@ export function ProfileView() {
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                    {isLoading ? ProfileConstants.SAVING_TEXT : ProfileConstants.SAVE_BUTTON_TEXT}
                   </Button>
                 </div>
               </CardContent>
@@ -136,26 +126,26 @@ export function ProfileView() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Shield className="w-5 h-5 text-green-600" />
-                  <span>Informações da Conta</span>
+                  <span>{ProfileConstants.ACCOUNT_INFO_TITLE}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">ID do Usuário</dt>
+                  <dt className="text-sm font-medium text-gray-500">{ProfileConstants.USER_ID_LABEL}</dt>
                   <dd className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">
                     {user?.id}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Status da Conta</dt>
+                  <dt className="text-sm font-medium text-gray-500">{ProfileConstants.ACCOUNT_STATUS_LABEL}</dt>
                   <dd className="mt-1">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Ativa
+                      {ProfileConstants.ACCOUNT_STATUS_ACTIVE}
                     </span>
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Membro desde</dt>
+                  <dt className="text-sm font-medium text-gray-500">{ProfileConstants.MEMBER_SINCE_LABEL}</dt>
                   <dd className="mt-1 text-sm text-gray-900 flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     {new Date().toLocaleDateString('pt-BR')}
@@ -168,50 +158,37 @@ export function ProfileView() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Mail className="w-5 h-5 text-orange-600" />
-                  <span>Configurações</span>
+                  <span>{ProfileConstants.SETTINGS_TITLE}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Notificações por Email</span>
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Lembrar de Mim</span>
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Modo Escuro</span>
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                </div>
+                {ProfileConstants.SETTINGS_OPTIONS.map((option, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{option.label}</span>
+                    <input
+                      type="checkbox"
+                      defaultChecked={option.defaultChecked}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
             <Card className="border-red-200">
               <CardHeader>
-                <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
+                <CardTitle className="text-red-600">{ProfileConstants.DANGER_ZONE_TITLE}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Ações irreversíveis que afetam sua conta.
+                  {ProfileConstants.DANGER_ZONE_DESCRIPTION}
                 </p>
                 <Button
                   onClick={handleLogout}
                   variant="outline"
                   className="w-full border-red-300 text-red-600 hover:bg-red-50"
                 >
-                  Fazer Logout
+                  {ProfileConstants.LOGOUT_BUTTON_TEXT}
                 </Button>
               </CardContent>
             </Card>
@@ -221,3 +198,5 @@ export function ProfileView() {
     </div>
   );
 }
+
+
